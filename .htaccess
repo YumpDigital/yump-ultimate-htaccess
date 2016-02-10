@@ -1,0 +1,447 @@
+###### YUMP ULTIMATE .HTACCESS ###################################################################
+### Find the latest version at https://github.com/YumpDigital/yump-ultimate-htaccess/blob/master/.htaccess
+###
+### Some parts copied from the excellent HTML5 boilerplate: https://github.com/h5bp/html5-boilerplate/blob/master/dist/.htaccess
+### The rest has been added/refined by Simon East, Technical Director, Yump
+###
+### WARNING: Any sub-folder that has its own .htaccess with RewriteRules will NOT adhere to the 
+###          RewriteRules here in root. Rules are NOT inherited by default.
+###
+### Note:    Using `.htaccess` files does somewhat slow down Apache, therefore, if you have
+###          access to the main server configuration file (which is usually called `httpd.conf`), 
+###          you should add this logic there.
+###          It IS however faster to perform redirects, gzipping, security filtering etc. in
+###          .htaccess rather than in PHP.
+
+RewriteEngine on
+
+
+########### MAINTENANCE MODE #####################################################################
+### Uncomment the following lines to place the entire site into maintenance mode.
+### Ensure you have a copy of site_down_for_maintenance.php in the root folder.
+### All users will see that page unless they have the YumpDev cookie set (to anything).
+### You can specify the time you expect the site to return as a helpful gesture to visitors.
+### (last four digits should be the time you expect to return (24h time))
+# RewriteCond %{HTTP_COOKIE} !YumpDev
+# RewriteRule .* site_down_for_maintenance.php?until=1830 [last]		
+
+
+########### REDIRECT FROM STAGING TO PRODUCTION ##################################################
+### Uncomment these lines to redirect the staging site to production
+### Ensure you have a copy of staging_moved.php in the root folder.
+### All users will see that page unless they have the YumpDev cookie set (to anything)
+# RewriteCond %{HTTP_COOKIE} !YumpDev
+# RewriteRule .* staging_moved.php?newdomain=yump.com.au [last]
+
+
+############## FORCING HTTPS:// ##################################################################
+### Redirect from the `http://` to the `https://` version of the URL.
+### Use the REQUEST_URI line to force HTTPS for only specific URLs that match the regular expression
+###
+### WARNING: Redirects will cause a loss of POST data if the user submits a form
+###          to an HTTP URL that then gets redirected to HTTPS, which is why we only
+###          redirect GET requests by default (see the REQUEST_METHOD line below)
+
+### Which URLs should redirect to HTTPS?
+### Leave the following REQUEST_URI line commented to send ALL requests to HTTPS
+# RewriteCond %{REQUEST_URI} ^(bookings|wp-admin)
+
+### Which domains should this be active for? Usually only the production site
+### (Leave off the www, as this regex will match the domain both with/without the www)
+# RewriteCond %{HTTP_HOST} my\.production\.site\.com
+
+### Perform the redirect if neither HTTPS nor CloudFlare HTTPS are active
+# RewriteCond %{HTTP:X-FORWARDED-PROTO} !=https		
+# RewriteCond %{HTTPS} !=on
+# RewriteCond %{REQUEST_METHOD} =GET
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}/$1 [redirect=301,last]
+
+
+######## USE OF 'WWW' AT START OF URLs ###########################################################
+### The same content should never be available under two different
+### URLs, especially not with and without `www.` at the beginning.
+### This can cause SEO problems (a divided pagerank), and therefore,
+### you should choose one of the alternatives and redirect the other
+### one.
+###
+### It’s also good practice to specify the preferred version within
+### Google Webmaster Tools, so do that too.
+###
+### By default we use option 1 (no "www")
+### See: http://no-www.org/faq.php?q=class_b
+###
+### If you would prefer to use `Option 2`, just comment out all the
+### lines from `Option 1` and uncomment the ones from `Option 2`.
+###
+### NEVER USE BOTH RULES AT THE SAME TIME!
+
+### First we need to set PROTO variable as either http OR https
+RewriteRule ^ - [env=PROTO:http]
+RewriteCond %{HTTP:X-FORWARDED-PROTO} =https [OR]
+RewriteCond %{HTTPS} =on
+RewriteRule ^ - [env=PROTO:https]
+
+### Option 1: rewrite www.example.com → example.com
+RewriteCond %{REQUEST_METHOD} =GET
+RewriteCond %{HTTP_HOST} ^www\.(.+)$ [nocase]
+RewriteRule ^ %{ENV:PROTO}://%1%{REQUEST_URI} [redirect=301,last]
+
+### Option 2: rewrite example.com → www.example.com
+# RewriteCond %{REQUEST_METHOD} =GET
+# RewriteCond %{HTTP_HOST} ^production\.site\.com [nocase]
+# RewriteRule ^ %{ENV:PROTO}://www.%{HTTP_HOST}%{REQUEST_URI} [redirect=301,last]
+
+
+########## PHP CONFIG ###########################################################################
+### This works for Apache's mod_php module (which tends to be the most common way of running PHP)
+### as well as LiteSpeed on VentraIP. 
+### These settings will be ignored on Ilisys, Zend Server and servers using FastCGI
+### (or anything other than mod_PHP)
+### FastCGI requires configuration commands inside .user.ini instead of here
+### Thus changes here should also be copied to .user.ini and vice-versa
+<IfModule mod_php5.c>
+	php_flag  short_open_tag on
+	php_value date.timezone Australia/Melbourne
+	php_value post_max_size 500M
+	php_value upload_max_filesize 500M
+	php_value memory_limit 120M
+	php_value max_execution_time 60
+	php_flag register_globals off
+	php_value default_charset UTF-8
+
+	# Next line is required for WordPress to support lots of menu items
+	# php_value max_input_vars 5000
+	
+	# Enable PHP error logging (will be placed in /PHP_errors.log)
+	php_flag log_errors on
+	php_value error_log PHP_errors.log
+</IfModule>
+
+
+####### BLOCK ROBOTS ON STAGING ##############################################################
+### Serve a different robots.txt file from staging servers (disallowing all robots)
+### Ensure you have a "robots_staging.txt" in the website root that contains the following 2 lines:
+### 
+###    User-agent: *
+###    Disallow: /
+###
+### This file will be served for domain names matching the following regex:
+RewriteCond %{HTTP_HOST} staging\. [nocase]
+RewriteRule ^robots.txt$ robots_staging.txt [last]
+
+### It's also highly recommended that any URLs blocked in robots.txt also have an X-Robots-Tag
+### header, otherwise they could still potentially make it into search results
+### See http://webmasters.stackexchange.com/questions/65184/will-the-already-indexed-urls-be-removed-if-i-use-a-robots-txt
+### You can test that this header correctly appears by running: 
+###   curl --head --insecure http://server/files/abc.doc
+### Or use Chrome Network Inspector
+
+#<IfModule mod_headers.c>
+#  SetEnvIf Request_URI ^/app/webroot/files/ ROBOTS_NOINDEX
+#  Header set X-Robots-Tag "noindex" ENV=ROBOTS_NOINDEX
+#</IfModule>
+
+
+######################## ENABLE CORS FOR EXTERNAL APIs #######################################
+### Cross-origin AJAX requests should be allowed, but only for our API endpoints
+### (Enabling CORS site-wide is a big security risk)
+### You can test that this header correctly appears by running: 
+###   curl --head --insecure http://server/api/123/
+### Or otherwise use Chrome Network Inspector
+
+# <IfModule mod_headers.c>
+#   RewriteCond %{THE_REQUEST} \s/rss/
+#   RewriteRule ^ - [ENV=ALLOW_CORS]
+#   Header set Access-Control-Allow-Origin "*" ENV=ALLOW_CORS
+# </IfModule>
+
+
+######################### SECURITY ##########################################################
+### This section must go before any WordPress/CakePHP rewrite rules.
+###
+### WARNING:
+### This file attempts to provide protection across an entire site, however, any sub-folder 
+### that has its own .htaccess with RewriteRules will NOT adhere to the rules here in root. 
+### Rules are NOT inherited by default.
+### A smart attacker could create their own .htaccess file that disables all these rules.
+
+### Disable directory browsing
+Options -indexes -MultiViews
+
+### Stop Apache from revealing its version number to the world
+# The following line doesn’t work on Zend Server but may work on other Apache installs:
+# ServerTokens Prod
+ServerSignature Off
+
+### Stop PHP from revealing its version number to the world
+# (Does this actually work?)
+Header unset X-Powered-By
+
+### Block access to backup and source files. These files may be left by some
+### text/html editors and pose a great security danger, when anyone can access
+### them.
+<FilesMatch "(^#.*#|\.(bat|bak|conf|dist|fla|inc|ini|log|markdown|md|old|psd|sh|sql|sql\.gz|sw[op]|tar\.gz|tmp)|readme|readme\.txt|readme\.html|example\.html|license\.txt|licence\.txt|_log|~)$">
+	Order allow,deny
+	Deny from all
+	Satisfy All
+</FilesMatch>
+
+### Block access to any files/folders beginning with a dot
+### This blocks the downloading of .htaccess, .git, .gitignore, .user.ini etc.
+### Alternate version: RedirectMatch 403 \.(htaccess|htpasswd|errordocs|logs)$
+RewriteCond %{SCRIPT_FILENAME} -d [OR]
+RewriteCond %{SCRIPT_FILENAME} -f
+RewriteRule "(^|/)\." - [F]
+
+### Block access to PHP easter eggs which can expose PHP version information
+### See http://perishablepress.com/expose-php/
+RewriteCond %{QUERY_STRING} \=PHP[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12} [NC]
+RewriteRule .* - [F]
+
+
+##################### WORDPRESS SECURITY ###################################################
+### (FOR WORDPRESS SITES ONLY)
+## Browsers should never request wp-config.php directly, block this
+<FilesMatch "^(wp-config|bb-config\.php)">
+	Order Allow,Deny
+	Deny from all
+</FilesMatch>
+
+### Block bots with an empty referrer or user-agent from accessing comment or login form
+### Helps to prevent some lame brute force password attacks and some comment spam
+RewriteCond %{REQUEST_METHOD} POST
+RewriteCond %{REQUEST_URI} (wp-comments-post|wp-login)\.php
+RewriteCond %{HTTP_REFERER} ^$ [OR]
+RewriteCond %{HTTP_USER_AGENT} ^$
+RewriteRule (.*) http://%{REMOTE_ADDR}/$1 [redirect=301,last]
+
+### BLOCK ALL REQUESTS FOR PHP FILES UNDER /wp-content/ & /wp-includes/
+### This will help prevent a lot of plugins from getting hacked
+### and prevent users from uploading PHP (or other script) files into /wp-content/uploads/
+### However it may break certain plugins/themes, so create exceptions as necessary below
+# RewriteCond %{REQUEST_URI} "!=/wp-content/plugins/XXXX/XXXX.php"      # Allow requests to a specific script
+### Allow access to W3 cache files
+RewriteCond %{REQUEST_URI} "!/wp-content/cache/.*\.html"
+### Block requests to all other URLs containing the following file extensions
+RewriteCond %{REQUEST_FILENAME} \.(cgi|php|phtml|php3|pl|py|jsp|asp|htm|shtml|sh|cgi)
+### Originally the rule was…
+### RewriteRule ^(wp-content|wp-includes)/ - [F]
+### However this appears to break the WordPress WYSIWYG editor, so until we have a better
+### fix in place, we use...
+RewriteRule ^(wp-content)/ - [F]
+
+
+########### WORDPRESS CLEAN URLS #################################################################
+### (FOR WORDPRESS SITES ONLY)
+### This is a slightly-tweaked version of WordPress’s default code
+### We don’t use a RewriteBase as it’s a confusing and unnecessary statement
+# BEGIN WordPress
+<IfModule mod_rewrite.c>
+
+  RewriteEngine On
+  RewriteRule ^index\.php$ - [last]
+  
+  # Prevent LiteSpeed from aborting long-running requests such as plugin upgrades
+  RewriteRule .* - [E=noabort:1]
+  
+  # add a trailing slash to /wp-admin
+  RewriteRule ^wp-admin$ /wp-admin/ [redirect=301,last]
+  
+  # Pass-through requests for actual existing files or directories
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [last]
+  
+  # Pass-through requests for assets in wp-content/wp-admin/wp-includes
+  RewriteRule ^(wp-(content|admin|includes).*) $1 [last]
+  
+  # Pass-through requests ending in .php
+  RewriteRule ^(.*\.php)$ $1 [last]
+  
+  # Send all other URLs to WordPress
+  RewriteRule . /index.php [last]
+
+</IfModule>
+
+# END WordPress
+
+
+######## CONCRETE5 REWRITES CAN GO BELOW HERE #########################################################
+
+
+######## INTERNET EXPLORER COMPATIBILITY #########################################################
+### Attempt to force IE out of compatibility mode and use "standards based" rendering instead
+<IfModule mod_headers.c>
+	BrowserMatch "MSIE" isIE
+	BrowserMatch "Trident" isIE
+	Header set X-UA-Compatible "IE=edge" env=isIE
+</IfModule>
+
+
+####### PERFORMANCE: APPLY GZIP COMPRESSION TO ALL TEXT-BASED CONTENT ############################
+### Only works if the DEFLATE module is active on the server (but usually is in Apache 2)
+### If content is already gzipped (perhaps via PHP's ob_handler, or when using the Minify component) 
+### mod_deflate will normally leave the content as is
+
+### Fix some mangled "Accept-Encoding" headers (by proxies and security apps) & send GZIP data anyway
+### See https://developer.yahoo.com/blogs/ydn/pushing-beyond-gzipping-25601.html
+<IfModule mod_setenvif.c>
+	<IfModule mod_headers.c>
+		SetEnvIfNoCase ^(Accept-EncodXng|X-cept-Encoding|X{15}|~{15}|-{15})$ ^((gzip|deflate)\s*,?\s*)+|[X~-]{4,13}$ HAVE_Accept-Encoding
+		RequestHeader append Accept-Encoding "gzip,deflate" env=HAVE_Accept-Encoding
+	</IfModule>
+</IfModule>
+
+<IfModule mod_filter.c>
+  <IfModule mod_deflate.c>
+	AddOutputFilterByType DEFLATE "application/atom+xml" "application/javascript" "application/json" "application/ld+json" "application/manifest+json" "application/rdf+xml" "application/rss+xml" "application/schema+json" "application/vnd.geo+json" "application/vnd.ms-fontobject" "application/x-font-ttf" "application/x-javascript" "application/x-web-app-manifest+json" "application/xhtml+xml" "application/xml" "font/eot" "font/opentype" "image/bmp" "image/svg+xml" "image/vnd.microsoft.icon" "image/x-icon" "text/cache-manifest" "text/css" "text/html" "text/javascript" "text/plain" "text/vcard" "text/vnd.rim.location.xloc" "text/vtt" "text/x-component" "text/x-cross-domain-policy" "text/xml"
+  </IfModule>
+</IfModule>
+
+
+################ MIME TYPES ###################################################################
+<IfModule mod_mime.c>
+  AddDefaultCharset utf-8
+  AddCharset utf-8 .atom .bbaw .css .geojson .js .json .jsonld .rdf .rss .topojson .vtt .webapp .xloc .xml
+  
+  AddType audio/mp4                                   f4a f4b m4a
+  AddType audio/ogg                                   oga ogg opus
+  AddType image/bmp                                   bmp
+  AddType image/svg+xml                               svg svgz
+  AddType image/webp                                  webp
+  AddType video/mp4                                   f4v f4p m4v mp4
+  AddType video/ogg                                   ogv
+  AddType video/webm                                  webm
+  AddType video/x-flv                                 flv
+  AddType image/x-icon                                cur ico
+  AddType text/x-component                            htc
+  
+  # Support for Microsoft Office docs? Not sure if this is needed?
+  AddType application/vnd.ms-word.document.macroEnabled.12                            docm
+  AddType application/vnd.openxmlformats-officedocument.wordprocessingml.document     docx
+  AddType application/vnd.openxmlformats-officedocument.wordprocessingml.template     dotx
+  AddType application/vnd.ms-powerpoint.template.macroEnabled.12                      potm
+  AddType application/vnd.openxmlformats-officedocument.presentationml.template       potx
+  AddType application/vnd.ms-powerpoint.addin.macroEnabled.12                         ppam
+  AddType application/vnd.ms-powerpoint.slideshow.macroEnabled.12                     ppsm
+  AddType application/vnd.openxmlformats-officedocument.presentationml.slideshow      ppsx
+  AddType application/vnd.ms-powerpoint.presentation.macroEnabled.12                  pptm
+  AddType application/vnd.openxmlformats-officedocument.presentationml.presentation   pptx
+  AddType application/vnd.ms-excel.addin.macroEnabled.12                              xlam
+  AddType application/vnd.ms-excel.sheet.binary.macroEnabled.12                       xlsb
+  AddType application/vnd.ms-excel.sheet.macroEnabled.12                              xlsm
+  AddType application/vnd.openxmlformats-officedocument.spreadsheetml.sheet           xlsx
+  AddType application/vnd.ms-excel.template.macroEnabled.12                           xltm
+  AddType application/vnd.openxmlformats-officedocument.spreadsheetml.template        xltx
+  
+  ### Browsers usually ignore the font media types and simply sniff
+  ### the bytes to figure out the font type.
+  ### https://mimesniff.spec.whatwg.org/#matching-a-font-type-pattern#
+  ### However, Blink and WebKit based browsers will show a warning
+  ### in the console if the following font types are served with any
+  ### other media types.
+  AddType application/font-woff                       woff
+  AddType application/font-woff2                      woff2
+  AddType application/vnd.ms-fontobject               eot
+  AddType application/x-font-ttf                      ttc ttf
+  AddType font/opentype                               otf	
+  
+  ### Prevent some browsers from MIME-sniffing the response.
+  ###
+  ### This reduces exposure to drive-by download attacks and cross-origin
+  ### data leaks, and should be left uncommented, especially if the server
+  ### is serving user-uploaded content or content that could potentially be
+  ### treated as executable by the browser.
+  ###
+  ### http://www.slideshare.net/hasegawayosuke/owasp-hasegawa
+  ### http://blogs.msdn.com/b/ie/archive/2008/07/02/ie8-security-part-v-comprehensive-protection.aspx
+  ### https://msdn.microsoft.com/en-us/library/ie/gg622941.aspx
+  ### https://mimesniff.spec.whatwg.org/
+  <IfModule mod_headers.c>
+      Header set X-Content-Type-Options "nosniff"
+  </IfModule>
+  
+  ### Allow cross-origin access to web fonts.
+  <IfModule mod_headers.c>
+      <FilesMatch "\.(eot|otf|tt[cf]|woff2?)$">
+          Header set Access-Control-Allow-Origin "*"
+      </FilesMatch>
+  </IfModule>
+</IfModule>
+
+
+####### PERFORMANCE: BROWSER CACHING ##########################################################
+### When the Expires header is already part of the response generated by the server (such as from PHP) 
+### mod_expires does not change or add an Expires or Cache-Control header.
+### Below are the defaults for all other cases.
+<IfModule mod_expires.c>
+
+    ExpiresActive on
+    ExpiresDefault                                      "access plus 4 hours"
+
+  # TELL BROWSERS NOT TO CACHE HTML, XML, JSON
+    ExpiresByType text/html                             "access plus 0 seconds"
+    ExpiresByType application/json                      "access plus 0 seconds"
+    ExpiresByType application/ld+json                   "access plus 0 seconds"
+    ExpiresByType application/schema+json               "access plus 0 seconds"
+    ExpiresByType application/vnd.geo+json              "access plus 0 seconds"
+    ExpiresByType application/xml                       "access plus 0 seconds"
+    ExpiresByType text/xml                              "access plus 0 seconds"
+
+  # CSS
+    ExpiresByType text/css                              "access plus 2 hours"
+
+  # RSS
+    ExpiresByType application/atom+xml                  "access plus 1 hour"
+    ExpiresByType application/rdf+xml                   "access plus 1 hour"
+    ExpiresByType application/rss+xml                   "access plus 1 hour"
+
+  # Favicon (cannot be renamed!) and cursor images
+    ExpiresByType image/vnd.microsoft.icon              "access plus 1 week"
+    ExpiresByType image/x-icon                          "access plus 1 week"
+
+  # JavaScript
+    ExpiresByType application/javascript                "access plus 8 hours"
+    ExpiresByType application/x-javascript              "access plus 8 hours"
+    ExpiresByType text/javascript                       "access plus 8 hours"
+
+  # Manifest files
+    ExpiresByType application/manifest+json             "access plus 1 year"
+    ExpiresByType application/x-web-app-manifest+json   "access plus 0 seconds"
+    ExpiresByType text/cache-manifest                   "access plus 0 seconds"
+
+  # Images
+    ExpiresByType image/gif                             "access plus 1 day"
+    ExpiresByType image/jpeg                            "access plus 1 day"
+    ExpiresByType image/png                             "access plus 1 day"
+
+  # Media files
+    ExpiresByType audio/ogg                             "access plus 1 month"
+    ExpiresByType image/bmp                             "access plus 1 month"
+    ExpiresByType image/svg+xml                         "access plus 1 month"
+    ExpiresByType image/webp                            "access plus 1 month"
+    ExpiresByType video/mp4                             "access plus 1 month"
+    ExpiresByType video/ogg                             "access plus 1 month"
+    ExpiresByType video/webm                            "access plus 1 month"
+
+  # Web fonts
+    ExpiresByType application/vnd.ms-fontobject         "access plus 1 month"
+    ExpiresByType font/eot                              "access plus 1 month"
+    ExpiresByType font/opentype                         "access plus 1 month"
+    ExpiresByType application/x-font-ttf                "access plus 1 month"
+    ExpiresByType application/font-woff                 "access plus 1 month"
+    ExpiresByType application/x-font-woff               "access plus 1 month"
+    ExpiresByType font/woff                             "access plus 1 month"
+    ExpiresByType application/font-woff2                "access plus 1 month"
+
+  # Other
+    ExpiresByType text/x-cross-domain-policy            "access plus 1 week"
+
+  #### This section is a hack to disable annoying JS/CSS caching on dev machines
+  #### Just use the name of a module that is NOT active on production
+  <IfModule mod_win32.c>
+    ExpiresByType text/css                              "access plus 0 seconds"
+    ExpiresByType application/javascript                "access plus 0 seconds"
+  </IfModule>
+
+</IfModule>
