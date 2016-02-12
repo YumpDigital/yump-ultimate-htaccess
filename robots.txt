@@ -1,0 +1,7 @@
+# Allow robots access to everything
+User-agent: *
+Disallow:
+
+### It's also highly recommended that any URLs blocked in robots.txt also have an X-Robots-Tag
+### header, otherwise they could still potentially make it into search results
+### See http://webmasters.stackexchange.com/questions/65184/will-the-already-indexed-urls-be-removed-if-i-use-a-robots-txt
