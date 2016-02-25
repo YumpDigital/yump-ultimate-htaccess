@@ -81,12 +81,12 @@ RewriteCond %{HTTP:X-FORWARDED-PROTO} =https [OR]
 RewriteCond %{HTTPS} =on
 RewriteRule ^ - [env=PROTO:https]
 
-### Option 1: rewrite www.example.com → example.com
+### Option 1: rewrite www.example.com --> example.com
 RewriteCond %{REQUEST_METHOD} =GET
 RewriteCond %{HTTP_HOST} ^www\.(.+)$ [nocase]
 RewriteRule ^ %{ENV:PROTO}://%1%{REQUEST_URI} [redirect=301,last]
 
-### Option 2: rewrite example.com → www.example.com
+### Option 2: rewrite example.com --> www.example.com
 # RewriteCond %{REQUEST_METHOD} =GET
 # RewriteCond %{HTTP_HOST} ^production\.site\.com [nocase]
 # RewriteRule ^ %{ENV:PROTO}://www.%{HTTP_HOST}%{REQUEST_URI} [redirect=301,last]
@@ -115,6 +115,10 @@ RewriteRule ^ %{ENV:PROTO}://%1%{REQUEST_URI} [redirect=301,last]
 	# Enable PHP error logging (will be placed in /PHP_errors.log)
 	php_flag log_errors on
 	php_value error_log PHP_errors.log
+
+	# Optional: How long PHP sessions can remain idle before they are deleted (8 hours)
+	# Note that this may have no effect on a shared server if another site wipes the sessions earlier
+	# php_value session.gc_maxlifetime 28800
 </IfModule>
 
 
