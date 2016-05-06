@@ -46,6 +46,22 @@ RewriteEngine on
 ### Redirect from the `http://` to the `https://` version of the URL.
 ### Use the REQUEST_URI line to force HTTPS for only specific URLs that match the regular expression
 ###
+### DO NOT USE THESE RULES WITH CLOUDFLARE
+###
+###          In May 2016 we discovered that:
+###              1. CloudFlare caches 301 redirects
+###              2. CloudFlare reuses the same cache for HTTP and HTTPS
+###          This means that when a plain HTTP request returns a 301 redirect to HTTPS, 
+###          requesting the same URL over HTTPS actually returns the same redirect (which 
+###          Cloudflare has cached) and an infinite loop occurs.
+###
+###          INSTEAD, you can create a CloudFlare 'Page Rule' which enforces HTTPS
+###          either for entire domain or certain URLs.
+###
+###             eg. http://*dca.org.au/*  -- Always Use HTTPS
+###
+###          (Wildcards are supported, but not regular expressions.)
+###
 ### WARNING: Redirects will cause a loss of POST data if the user submits a form
 ###          to an HTTP URL that then gets redirected to HTTPS, which is why we only
 ###          redirect GET requests by default (see the REQUEST_METHOD line below)
