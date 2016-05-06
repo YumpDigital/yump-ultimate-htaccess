@@ -1,17 +1,25 @@
 ###### YUMP ULTIMATE .HTACCESS ###################################################################
-### Find the latest version at https://github.com/YumpDigital/yump-ultimate-htaccess/blob/master/.htaccess
+### Find the latest version at 
+### https://github.com/YumpDigital/yump-ultimate-htaccess/blob/master/.htaccess
 ###
-### Some parts copied from the excellent HTML5 boilerplate: https://github.com/h5bp/html5-boilerplate/blob/master/dist/.htaccess
-### The rest has been added/refined by Simon East, Technical Director, Yump
+### Some parts initially copied from the excellent HTML5 boilerplate: 
+### https://github.com/h5bp/html5-boilerplate/blob/master/dist/.htaccess
+### The rest has been added/refined by Simon East, Technical Director, Yump.com.au
 ###
-### WARNING: Any sub-folder that has its own .htaccess with RewriteRules will NOT adhere to the 
-###          RewriteRules here in root. Rules are NOT inherited by default.
+### WARNING: This file attempts to provide protection across an entire site, however, 
+###          any sub-folder that has its own .htaccess with RewriteRules will NOT adhere to the 
+###          RewriteRules here in root. RewriteRules are NOT inherited by default.
+###
+###          A smart attacker could upload their own .htaccess file that disables all these rules
+###          in that particular folder. (Although if they’ve got that far they could probably 
+###          disable these rules in root anyway.)
 ###
 ### Note:    Using `.htaccess` files does somewhat slow down Apache, therefore, if you have
 ###          access to the main server configuration file (which is usually called `httpd.conf`), 
 ###          you should add this logic there.
 ###          It IS however faster to perform redirects, gzipping, security filtering etc. in
 ###          .htaccess rather than in PHP.
+
 
 RewriteEngine on
 
@@ -240,37 +248,37 @@ RewriteRule ^(wp-content)/ - [F]
 ### This is a slightly-tweaked version of WordPress’s default code
 ### We don’t use a RewriteBase as it’s a confusing and unnecessary statement
 # BEGIN WordPress
-<IfModule mod_rewrite.c>
-
-  RewriteEngine On
-  RewriteRule ^index\.php$ - [last]
-  
-  # Prevent LiteSpeed from aborting long-running requests such as plugin upgrades
-  RewriteRule .* - [E=noabort:1]
-  
-  # add a trailing slash to /wp-admin
-  RewriteRule ^wp-admin$ /wp-admin/ [redirect=301,last]
-  
-  # Pass-through requests for actual existing files or directories
-  RewriteCond %{REQUEST_FILENAME} -f [OR]
-  RewriteCond %{REQUEST_FILENAME} -d
-  RewriteRule ^ - [last]
-  
-  # Pass-through requests for assets in wp-content/wp-admin/wp-includes
-  RewriteRule ^(wp-(content|admin|includes).*) $1 [last]
-  
-  # Pass-through requests ending in .php
-  RewriteRule ^(.*\.php)$ $1 [last]
-  
-  # Send all other URLs to WordPress
-  RewriteRule . /index.php [last]
-
-</IfModule>
+# <IfModule mod_rewrite.c>
+# 
+#   RewriteEngine On
+#   RewriteRule ^index\.php$ - [last]
+#   
+#   # Prevent LiteSpeed from aborting long-running requests such as plugin upgrades
+#   RewriteRule .* - [E=noabort:1]
+#   
+#   # add a trailing slash to /wp-admin
+#   RewriteRule ^wp-admin$ /wp-admin/ [redirect=301,last]
+#   
+#   # Pass-through requests for actual existing files or directories
+#   RewriteCond %{REQUEST_FILENAME} -f [OR]
+#   RewriteCond %{REQUEST_FILENAME} -d
+#   RewriteRule ^ - [last]
+#   
+#   # Pass-through requests for assets in wp-content/wp-admin/wp-includes
+#   RewriteRule ^(wp-(content|admin|includes).*) $1 [last]
+#   
+#   # Pass-through requests ending in .php
+#   RewriteRule ^(.*\.php)$ $1 [last]
+#   
+#   # Send all other URLs to WordPress
+#   RewriteRule . /index.php [last]
+# 
+# </IfModule>
 
 # END WordPress
 
 
-######## CONCRETE5 REWRITES CAN GO BELOW HERE #########################################################
+######## CONCRETE5 REWRITES CAN GO BELOW HERE ####################################################
 
 
 ######## INTERNET EXPLORER COMPATIBILITY #########################################################
