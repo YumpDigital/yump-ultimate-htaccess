@@ -146,6 +146,14 @@ RewriteRule ^ %{ENV:PROTO}://%1%{REQUEST_URI} [redirect=301,last]
 </IfModule>
 
 
+########## LITESPEED CONFIG ##################################################################
+### VentraIP runs the LiteSpeed server (instead of Apache) and it can sometimes kill
+### long-running scripts unless the rules below are activated:
+### See https://ventraip.com.au/faq/article/why-is-my-web-based-offsite-backup-script-failing/
+# RewriteRule .* - [E=noabort:1]
+# RewriteRule .* - [E=noconntimeout:1]
+
+
 ####### BLOCK ROBOTS ON STAGING ##############################################################
 ### Serve a different robots.txt file from staging servers (disallowing all robots)
 ### Ensure you have a "robots_staging.txt" in the website root that contains the following 2 lines:
@@ -203,11 +211,13 @@ ServerSignature Off
 
 ### Stop PHP from revealing its version number to the world
 # (Does this actually work?)
-Header unset X-Powered-By
+<IfModule mod_headers.c>
+  Header unset X-Powered-By
+</IfModule>
 
 ### Block access to backup and source files. These files may be left by some
-### text/html editors and pose a great security danger, when anyone can access
-### them.
+### text/html editors and pose a great security risk of leaking passwords, raw 
+### SQL data and other private information.
 <FilesMatch "(^#.*#|\.(bat|bak|conf|dist|fla|inc|ini|log|markdown|md|old|psd|sh|sql|sql\.gz|sw[op]|tar\.gz|tmp)|readme|readme\.txt|readme\.html|example\.html|license\.txt|licence\.txt|_log|~)$">
 	Order allow,deny
 	Deny from all
