@@ -1,12 +1,19 @@
 <?
-// SURFACE DIGITAL "SITE DOWN" MAINTENANCE PAGE
-// To activate this maintenance page and block access to the whole site, add these lines to /app/webroot/.htaccess
-// 		 RewriteCond %{HTTP_COOKIE} !SurfaceDig
+// YUMP "SITE DOWN" MAINTENANCE PAGE
+// To activate this maintenance page and block access to the whole site, add these lines to your .htaccess
+// 		 RewriteCond %{HTTP_COOKIE} !YumpDev
 //		 RewriteRule .* site_down_for_maintenance.php?until=2030 [last]		# last four digits should be the time you expect to return (24h time)
 
 $downUntil = strtotime($_GET['until']);
 $minsRemaining = ceil(($downUntil - time()) / 60);
 $downUntil = date('g:ia', $downUntil);
+
+// Return a 503 error code which is better for SEO
+$protocol = "HTTP/1.0";
+if ("HTTP/1.1" == $_SERVER["SERVER_PROTOCOL"])
+	$protocol = "HTTP/1.1";
+header("$protocol 503 Service Unavailable", true, 503);
+header("Retry-After: 300");
 ?>
 <!DOCTYPE HTML>
 <html>
