@@ -25,13 +25,24 @@ RewriteEngine on
 
 
 ########### MAINTENANCE MODE #####################################################################
-### Uncomment the following lines to place the entire site into maintenance mode.
+### Uncomment the following lines to place the site into maintenance mode.
 ### Ensure you have a copy of site_down_for_maintenance.php in the root folder.
 ### All users will see that page unless they have the YumpDev cookie set (to anything).
 ### You can specify the time you expect the site to return as a helpful gesture to visitors.
 ### (last four digits should be the time you expect to return (24h time))
 # RewriteCond %{HTTP_COOKIE} !YumpDev
-# RewriteRule .* site_down_for_maintenance.php?until=1830 [last]		
+
+### You can optionally uncomment these additional conditions to only block certain URLs
+### (typically URLs that write changes to the database)
+### If you leave these commented, the entire site will be blocked
+# RewriteCond %{REQUEST_URI} admin [OR]
+# RewriteCond %{REQUEST_URI} bookshop_checkout [OR]
+# RewriteCond %{REQUEST_URI} online-payment [OR]
+# RewriteCond %{REQUEST_URI} register_details [OR]
+# RewriteCond %{REQUEST_URI} site_down_for_maintenance
+
+### Below, insert the time you expect to return (24h time)
+# RewriteRule .* site_down_for_maintenance.php?until=1800 [last]    
 
 
 ########### REDIRECT FROM STAGING TO PRODUCTION ##################################################

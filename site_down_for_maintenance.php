@@ -4,6 +4,7 @@
 // 		 RewriteCond %{HTTP_COOKIE} !YumpDev
 //		 RewriteRule .* site_down_for_maintenance.php?until=2030 [last]		# last four digits should be the time you expect to return (24h time)
 
+date_default_timezone_set('Australia/Melbourne');
 $downUntil = strtotime($_GET['until']);
 $minsRemaining = ceil(($downUntil - time()) / 60);
 $downUntil = date('g:ia', $downUntil);
