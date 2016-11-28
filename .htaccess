@@ -49,6 +49,7 @@ RewriteEngine on
 ### Uncomment these lines to redirect the staging site to production
 ### Ensure you have a copy of staging_moved.php in the root folder.
 ### All users will see that page unless they have the YumpDev cookie set (to anything)
+# RewriteCond %{HTTP_HOST} staging
 # RewriteCond %{HTTP_COOKIE} !YumpDev
 # RewriteRule .* staging_moved.php?newdomain=yump.com.au [last]
 
@@ -173,7 +174,7 @@ RewriteRule ^ %{ENV:PROTO}://%1%{REQUEST_URI} [redirect=301,last]
 ###    Disallow: /
 ###
 ### This file will be served for domain names matching the following regex:
-RewriteCond %{HTTP_HOST} staging\. [nocase]
+RewriteCond %{HTTP_HOST} staging [nocase]
 RewriteRule ^robots.txt$ robots_staging.txt [last]
 
 ### It's also highly recommended that any URLs blocked in robots.txt also have an X-Robots-Tag
@@ -183,10 +184,17 @@ RewriteRule ^robots.txt$ robots_staging.txt [last]
 ###   curl --head --insecure http://server/files/abc.doc
 ### Or use Chrome Network Inspector
 
-#<IfModule mod_headers.c>
-#  SetEnvIf Request_URI ^/app/webroot/files/ ROBOTS_NOINDEX
-#  Header set X-Robots-Tag "noindex" ENV=ROBOTS_NOINDEX
-#</IfModule>
+<IfModule mod_headers.c>
+
+  ### Send "X-Robots-Tag: noindex" for all URLs on staging site
+  SetEnvIf Host staging ROBOTS_NOINDEX
+  
+  ### Uncomment to send "X-Robots-Tag: noindex" for a specific folder on production
+  # SetEnvIf Request_URI ^/app/webroot/files/ ROBOTS_NOINDEX
+
+  Header set X-Robots-Tag "noindex" ENV=ROBOTS_NOINDEX
+  
+</IfModule>
 
 
 ######################## ENABLE CORS FOR EXTERNAL APIs #######################################
