@@ -40,17 +40,29 @@ RewriteEngine on
 # RewriteCond %{REQUEST_URI} online-payment [OR]
 # RewriteCond %{REQUEST_URI} register_details [OR]
 # RewriteCond %{REQUEST_URI} site_down_for_maintenance
+# RewriteCond %{REQUEST_URI} !=/robots.txt
 
 ### Below, insert the time you expect to return (24h time)
 # RewriteRule .* site_down_for_maintenance.php?until=1800 [last]    
 
 
 ########### REDIRECT FROM STAGING TO PRODUCTION ##################################################
-### Uncomment these lines to redirect the staging site to production
-### Ensure you have a copy of staging_moved.php in the root folder.
-### All users will see that page unless they have the YumpDev cookie set (to anything)
+### Once a site is deployed live, you might like to tell users NOT to make any further changes
+### on staging. To do this:
+###
+### 1. Ensure you have a copy of staging_moved.php in the root (or /yump/) folder.
+### 2. Uncomment the lines below and ensure the staging domain and file path is correct.
+###    This will force all requests to see the "Staging site moved" page
+### 3. Append the new URL to the querystring to direct them to the right place
+### 4. Deploy
+###
+### If you need to access the site while it's in this mode, you can manually add the 'YumpDev'
+### cookie to your browser and it will let you through. The cookie can be blank.
+###
+### This should NOT override robots.txt, so we'll exclude that here.
 # RewriteCond %{HTTP_HOST} staging
 # RewriteCond %{HTTP_COOKIE} !YumpDev
+# RewriteCond %{REQUEST_URI} !=/robots.txt
 # RewriteRule .* staging_moved.php?newdomain=yump.com.au [last]
 
 
@@ -135,7 +147,10 @@ RewriteRule ^ %{ENV:PROTO}://%1%{REQUEST_URI} [redirect=301,last]
 ### (or anything other than mod_PHP)
 ### FastCGI requires configuration commands inside .user.ini instead of here
 ### Thus changes here should also be copied to .user.ini and vice-versa
-<IfModule mod_php5.c>
+
+### We now target PHP 7 also, so no longer using <IfModule>
+# <IfModule mod_php5.c>
+
 	php_flag  short_open_tag on
 	php_value date.timezone Australia/Melbourne
 	php_value post_max_size 500M
@@ -155,7 +170,8 @@ RewriteRule ^ %{ENV:PROTO}://%1%{REQUEST_URI} [redirect=301,last]
 	# Optional: How long PHP sessions can remain idle before they are deleted (8 hours)
 	# Note that this may have no effect on a shared server if another site wipes the sessions earlier
 	# php_value session.gc_maxlifetime 28800
-</IfModule>
+
+# </IfModule>
 
 
 ########## LITESPEED CONFIG ##################################################################
@@ -174,7 +190,7 @@ RewriteRule ^ %{ENV:PROTO}://%1%{REQUEST_URI} [redirect=301,last]
 ###    Disallow: /
 ###
 ### This file will be served for domain names matching the following regex:
-RewriteCond %{HTTP_HOST} staging [nocase]
+RewriteCond %{HTTP_HOST} (\.staging|direct\.|test|panthur|\.dev) [nocase]
 RewriteRule ^robots.txt$ robots_staging.txt [last]
 
 ### It's also highly recommended that any URLs blocked in robots.txt also have an X-Robots-Tag
@@ -187,7 +203,7 @@ RewriteRule ^robots.txt$ robots_staging.txt [last]
 <IfModule mod_headers.c>
 
   ### Send "X-Robots-Tag: noindex" for all URLs on staging site
-  SetEnvIf Host staging ROBOTS_NOINDEX
+  SetEnvIf Host (\.staging|direct\.|test|panthur|\.dev) ROBOTS_NOINDEX
   
   ### Uncomment to send "X-Robots-Tag: noindex" for a specific folder on production
   # SetEnvIf Request_URI ^/app/webroot/files/ ROBOTS_NOINDEX
@@ -254,6 +270,32 @@ RewriteRule "(^|/)\." - [F]
 ### See http://perishablepress.com/expose-php/
 RewriteCond %{QUERY_STRING} \=PHP[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12} [NC]
 RewriteRule .* - [F]
+
+
+################## MOD_SECURITY FIREWALL SETTINGS ########################################
+### Sometimes the firewall can be too strict and presents "403 Forbidden" errors a little
+### too often. It's possible to disable the firewall for specific URLs that contain the 
+### regex below. The regex should be placed between "m#" and "#" - this special syntax is 
+### required when the string contains forward slashes.
+###
+### Use multiple <If> blocks if you need to match multiple URLs.
+# <IfModule mod_security.c>
+  ### Disable for all URLs containing /admin
+  # <If "%{REQUEST_URI} =~ m#/admin#">
+  #   SecFilterEngine Off
+  #   SecFilterScanPOST Off
+  # </If>
+  ### Disable on the staging site
+  # <If "%{HTTP_HOST} =~ /staging/">
+  #   SecFilterEngine Off
+  #   SecFilterScanPOST Off
+  # </If>
+  ### Disable for IPs within the following list
+  # <If "%{REMOTE_ADDR} in {'180.189.140.53', '127.0.0.1'}">
+  #   SecFilterEngine Off
+  #   SecFilterScanPOST Off
+  # </If>
+# </IfModule>
 
 
 ##################### WORDPRESS SECURITY ###################################################
@@ -324,6 +366,13 @@ RewriteRule ^(wp-content)/ - [F]
 
 
 ######## CONCRETE5 REWRITES CAN GO BELOW HERE ####################################################
+
+############# CRAFT CMS CLEAN URLs ###############################################################
+### Send would-be 404 requests to Craft
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/(favicon\.ico|apple-touch-icon.*\.png)$ [NC]
+RewriteRule (.+) index.php?p=$1 [QSA,L]
 
 
 ######## INTERNET EXPLORER COMPATIBILITY #########################################################

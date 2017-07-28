@@ -1,4 +1,4 @@
-<?
+<?php
 // Want to enable this "Staging Moved" message so that staging users are redirected to production?
 // Just uncomment the appropriate lines in /.htaccess
 
@@ -6,6 +6,9 @@ $newServer = isset($_GET['newdomain'])
 	? 'http://' . $_GET['newdomain']
 	: 'http://membership.melbournestorm.com.au';		// can hardcode URL here if needed (no trailing slash!)
 $newUrl = $newServer . $_SERVER["REQUEST_URI"];
+
+// Robots should NOT index this interstitial page
+header('X-Robots-Tag: noindex');
 ?>
 <!DOCTYPE html>
 <!-- Need to enable this staging site again?  look in /.htaccess -->
