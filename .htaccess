@@ -253,7 +253,7 @@ ServerSignature Off
 ### Block access to backup and source files. These files may be left by some
 ### text/html editors and pose a great security risk of leaking passwords, raw 
 ### SQL data and other private information.
-<FilesMatch "(^#.*#|\.(bat|bak|conf|dist|fla|inc|ini|log|markdown|md|old|psd|sh|sql|sql\.gz|sw[op]|tar\.gz|tmp)|readme|readme\.txt|readme\.html|example\.html|license\.txt|licence\.txt|_log|~)$">
+<FilesMatch "(^#.*#|\.(bat|bak|conf|dist|fla|inc|info|ini|log|markdown|md|old|orig|original|po|psd|sh|sql|sql\.gz|save|sw[op]|tar\.gz|theme|tmp|tpl|tpl\.php)|composer\.json|composer\.lock|package\.json|readme|readme\.txt|readme\.html|example\.html|license\.txt|licence\.txt|_log|~)$">
 	Order allow,deny
 	Deny from all
 	Satisfy All
