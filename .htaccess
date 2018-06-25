@@ -53,7 +53,7 @@ RewriteEngine on
 ### 1. Ensure you have a copy of staging_moved.php in the root (or /yump/) folder.
 ### 2. Uncomment the lines below and ensure the staging domain and file path is correct.
 ###    This will force all requests to see the "Staging site moved" page
-### 3. Append the new URL to the querystring to direct them to the right place
+### 3. Append the new URL to the querystring below to direct them to the right place
 ### 4. Deploy
 ###
 ### If you need to access the site while it's in this mode, you can manually add the 'YumpDev'
@@ -545,9 +545,10 @@ RewriteRule (.+) index.php?p=$1 [QSA,L]
 
   #### This section is a hack to disable annoying JS/CSS caching on dev machines
   #### Just use the name of a module that is NOT active on production
-  <IfModule mod_win32.c>
-    ExpiresByType text/css                              "access plus 0 seconds"
-    ExpiresByType application/javascript                "access plus 0 seconds"
-  </IfModule>
+  #### INCORRECTLY APPLIES ON VENTRA/LITESPEED SO COMMENTING OUT FOR NOW
+  # <IfModule mod_win32.c>
+  #   ExpiresByType text/css                              "access plus 0 seconds"
+  #   ExpiresByType application/javascript                "access plus 0 seconds"
+  # </IfModule>
 
 </IfModule>
